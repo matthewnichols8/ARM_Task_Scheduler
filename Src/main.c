@@ -19,6 +19,29 @@
 #include <stdint.h>
 #include <stdio.h>
 
+void task1_handler(); //Task 1
+void task2_handler(); //Task 2
+void task3_handler(); //Task 3
+void task4_handler(); //Task 4
+
+/*
+ * Stack Memory Calculations
+ */
+
+#define SIZE_TASK_STACK      1024U
+#define SIZE_SCHED_STACK     1024U
+
+#define SRAM_START           0x20000000U
+#define SIZE_SRAM            ( (128) * (1024) )
+#define SRAM_END             ( (SRAM_START) + (SIZE_SRAM) )
+
+#define T1_STACK_START       SRAM_END
+#define T2_STACK_START		 ( (SRAM_END) - (SIZE_TASK_STACK) )
+#define T3_STACK_START		 ( (SRAM_END) - (2 * SIZE_TASK_STACK) )
+#define T4_STACK_START		 ( (SRAM_END) - (3 * SIZE_TASK_STACK) )
+#define SCHED_STACK_START    ( (SRAM_END) - (4 * SIZE_TASK_STACK) )
+
+
 int main(void)
 {
 	printf("Hello!\n");
@@ -27,4 +50,29 @@ int main(void)
 	printf("YAY!3\n");
     /* Loop forever */
 	for(;;);
+}
+
+
+void task1_handler() {
+	while(1) {
+		printf("This is task 1\n");
+	}
+}
+
+void task2_handler() {
+	while(1) {
+		printf("This is task 2\n");
+	}
+}
+
+void task3_handler() {
+	while(1) {
+		printf("This is task 3\n");
+	}
+}
+
+void task4_handler() {
+	while(1) {
+		printf("This is task 4\n");
+	}
 }
