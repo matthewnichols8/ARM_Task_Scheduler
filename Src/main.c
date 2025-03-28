@@ -19,11 +19,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-void task1_handler(); //Task 1
-void task2_handler(); //Task 2
-void task3_handler(); //Task 3
-void task4_handler(); //Task 4
-
 /*
  * Stack Memory Calculations
  */
@@ -41,13 +36,26 @@ void task4_handler(); //Task 4
 #define T4_STACK_START		 ( (SRAM_END) - (3 * SIZE_TASK_STACK) )
 #define SCHED_STACK_START    ( (SRAM_END) - (4 * SIZE_TASK_STACK) )
 
+#define TICK_HZ 			 1000U
+
+#define HSI_CLOCK 			 16000000U
+#define SYSTICK_TIM_CLK		 HSI_CLOCK
+
+/*
+ * Tasks
+ */
+
+void task1_handler(); //Task 1
+void task2_handler(); //Task 2
+void task3_handler(); //Task 3
+void task4_handler(); //Task 4
+
+void init_systick_timer(uint32_t tick_hz);
 
 int main(void)
 {
-	printf("Hello!\n");
-	printf("YAY!1\n");
-	printf("YAY!2\n");
-	printf("YAY!3\n");
+	init_systick_timer(TICK_HZ);
+
     /* Loop forever */
 	for(;;);
 }
@@ -75,4 +83,27 @@ void task4_handler() {
 	while(1) {
 		printf("This is task 4\n");
 	}
+}
+
+void init_systick_timer(uint32_t tick_hz) {
+	uint32_t* pSRVR = (uint32_t*)  0xE000E014; //SysTick Reload Value Register
+	uint32_t* pSCSR = (uint32_t*)  0xE000E010; //SysTick Control and Status Register
+	uint32_t countVal = (SYSTICK_TIM_CLK / tick_hz) - 1; //Reload Value should be N-1 (Number of clock cycles - 1).
+
+	//Clear value of SVR
+	*pSRVR &= ~(0x00FFFFFFFF);
+
+	//load value into SVR
+	*pSRVR |= countVal;
+
+	//Edit Settings
+	*pSCSR |= (1 << 1); //Enables SysTick Exception Request
+	*pSCSR |= (1 << 2); //Indicates that the clock source is the processor internal clock
+
+	//Enable systick
+	*pSCSR |= (1 << 0); //Enables the SysTick counter
+}
+
+void SysTick_Handler() {
+	printf("In SysTick Handler\n");
 }
