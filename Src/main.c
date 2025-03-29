@@ -42,7 +42,7 @@
 #define SYSTICK_TIM_CLK		 HSI_CLOCK
 
 /*
- * Tasks
+ * Tasks to schedule
  */
 
 void task1_handler(); //Task 1
