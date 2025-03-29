@@ -40,15 +40,22 @@ void init_tasks_stack();
 /*
  * Global Variables
  */
-uint32_t psp_of_tasks[MAX_TASKS];
+uint32_t psp_of_tasks[MAX_TASKS] = {T1_STACK_START, T2_STACK_START, T3_STACK_START, T4_STACK_START};
+
+uint32_t task_handlers[MAX_TASKS];
 
 int main(void)
 {
 	init_scheduler_stack(SCHED_STACK_START);
 
+	task_handlers[0] = (uint32_t)task1_handler;
+	task_handlers[1] = (uint32_t)task2_handler;
+	task_handlers[2] = (uint32_t)task3_handler;
+	task_handlers[3] = (uint32_t)task4_handler;
+
 	init_tasks_stack();
 
-	init_systick_timer(TICK_HZ);
+	init_systick_timer(TICK_HZ); //Generates SysTic Timer Exception
 
     /* Loop forever */
 	for(;;);
@@ -106,9 +113,28 @@ __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack) {
 	__asm volatile("BX LR"); //Return from function call
 }
 
-
 void init_tasks_stack() {
+	uint32_t* pPSP;
+	for (int i = 0; i < MAX_TASKS; i++) {
+		pPSP = (uint32_t*) psp_of_tasks[i];
 
+		pPSP --; //XPSR
+		*pPSP = DUMMY_XPSR; //Should always be 0x01000000 to be in thumb set instructions
+
+		pPSP --; //PC
+		*pPSP = task_handlers[i];
+
+		pPSP --; //LR
+		*pPSP = 0xFFFFFFFD;
+
+		//Sets the other reigsters to 0
+		for (int j = 0; j < 13; j++) {
+			pPSP --;
+			*pPSP = 0;
+		}
+
+		psp_of_tasks[i] = (uint32_t)pPSP; //Stores value of pPSP in global array
+	}
 }
 
 void SysTick_Handler() {

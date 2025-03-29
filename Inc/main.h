@@ -35,4 +35,6 @@
 #define HSI_CLOCK 			 16000000U
 #define SYSTICK_TIM_CLK		 HSI_CLOCK
 
+#define DUMMY_XPSR 			 0x01000000U
+
 #endif /* MAIN_H_ */
