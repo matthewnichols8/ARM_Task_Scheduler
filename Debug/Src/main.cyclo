@@ -1,8 +1,9 @@
-../Src/main.c:56:5:main	1
-../Src/main.c:67:6:task1_handler	1
-../Src/main.c:73:6:task2_handler	1
-../Src/main.c:79:6:task3_handler	1
-../Src/main.c:85:6:task4_handler	1
-../Src/main.c:91:6:init_systick_timer	1
-../Src/main.c:113:29:init_scheduler_stack	1
-../Src/main.c:118:6:SysTick_Handler	1
+../Src/main.c:45:5:main	1
+../Src/main.c:58:6:task1_handler	1
+../Src/main.c:64:6:task2_handler	1
+../Src/main.c:70:6:task3_handler	1
+../Src/main.c:76:6:task4_handler	1
+../Src/main.c:82:6:init_systick_timer	1
+../Src/main.c:104:29:init_scheduler_stack	1
+../Src/main.c:110:6:init_tasks_stack	1
+../Src/main.c:114:6:SysTick_Handler	1

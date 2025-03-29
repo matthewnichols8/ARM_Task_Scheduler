@@ -18,28 +18,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-
-/*
- * Stack Memory Calculations
- */
-
-#define SIZE_TASK_STACK      1024U
-#define SIZE_SCHED_STACK     1024U
-
-#define SRAM_START           0x20000000U
-#define SIZE_SRAM            ( (128) * (1024) )
-#define SRAM_END             ( (SRAM_START) + (SIZE_SRAM) )
-
-#define T1_STACK_START       SRAM_END
-#define T2_STACK_START		 ( (SRAM_END) - (SIZE_TASK_STACK) )
-#define T3_STACK_START		 ( (SRAM_END) - (2 * SIZE_TASK_STACK) )
-#define T4_STACK_START		 ( (SRAM_END) - (3 * SIZE_TASK_STACK) )
-#define SCHED_STACK_START    ( (SRAM_END) - (4 * SIZE_TASK_STACK) )
-
-#define TICK_HZ 			 1000U
-
-#define HSI_CLOCK 			 16000000U
-#define SYSTICK_TIM_CLK		 HSI_CLOCK
+#include "main.h"
 
 /*
  * Tasks to schedule
@@ -50,12 +29,24 @@ void task2_handler(); //Task 2
 void task3_handler(); //Task 3
 void task4_handler(); //Task 4
 
+
+/*
+ * Function Declarations
+ */
 void init_systick_timer(uint32_t tick_hz);
 __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack);
+void init_tasks_stack();
+
+/*
+ * Global Variables
+ */
+uint32_t psp_of_tasks[MAX_TASKS];
 
 int main(void)
 {
 	init_scheduler_stack(SCHED_STACK_START);
+
+	init_tasks_stack();
 
 	init_systick_timer(TICK_HZ);
 
@@ -113,6 +104,11 @@ void init_systick_timer(uint32_t tick_hz) {
 __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack) {
 	__asm volatile("MSR MSP, %0": : "r" (sched_top_of_stack) : ); //Puts value of the top of the stack into MSP
 	__asm volatile("BX LR"); //Return from function call
+}
+
+
+void init_tasks_stack() {
+
 }
 
 void SysTick_Handler() {
