@@ -51,9 +51,12 @@ void task3_handler(); //Task 3
 void task4_handler(); //Task 4
 
 void init_systick_timer(uint32_t tick_hz);
+__attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack);
 
 int main(void)
 {
+	init_scheduler_stack(SCHED_STACK_START);
+
 	init_systick_timer(TICK_HZ);
 
     /* Loop forever */
@@ -102,6 +105,14 @@ void init_systick_timer(uint32_t tick_hz) {
 
 	//Enable systick
 	*pSCSR |= (1 << 0); //Enables the SysTick counter
+}
+
+/*
+ * Must be a naked function to access MSP which is a special register
+ */
+__attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack) {
+	__asm volatile("MSR MSP, %0": : "r" (sched_top_of_stack) : ); //Puts value of the top of the stack into MSP
+	__asm volatile("BX LR"); //Return from function call
 }
 
 void SysTick_Handler() {
