@@ -36,6 +36,8 @@ void task4_handler(); //Task 4
 void init_systick_timer(uint32_t tick_hz);
 __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack);
 void init_tasks_stack();
+void enable_processor_faults();
+void switch_sp_to_psp();
 
 /*
  * Global Variables
@@ -46,6 +48,8 @@ uint32_t task_handlers[MAX_TASKS];
 
 int main(void)
 {
+	enable_processor_faults(); //Enables Mem Manage, Bus, and Usage Faults
+
 	init_scheduler_stack(SCHED_STACK_START);
 
 	task_handlers[0] = (uint32_t)task1_handler;
@@ -55,7 +59,11 @@ int main(void)
 
 	init_tasks_stack();
 
-	init_systick_timer(TICK_HZ); //Generates SysTic Timer Exception
+	init_systick_timer(TICK_HZ); //Generates SysTick Timer Exception
+
+	switch_sp_to_psp(); //Switches from MSP to PSP
+
+	task1_handler();
 
     /* Loop forever */
 	for(;;);
@@ -137,6 +145,36 @@ void init_tasks_stack() {
 	}
 }
 
+/*
+ * Enables memory manage, bus, and usage faults
+ */
+void enable_processor_faults() {
+	uint32_t* pSHCSR = (uint32_t*) 0xE000ED24; //Address of System Handler Control and State Register
+
+	*pSHCSR |= (1 << 16); //Memory Manage
+	*pSHCSR |= (1 << 17); //Bus Fault
+	*pSHCSR |= (1 << 18); //Usage Fault
+}
+
+void switch_sp_to_psp() {
+
+}
+
 void SysTick_Handler() {
 	printf("In SysTick Handler\n");
+}
+
+void HardFault_Handler() {
+	printf("HardFault Exception\n");
+	while(1);
+}
+
+void MemManage_Handler() {
+	printf("MemManage Exception\n");
+	while(1);
+}
+
+void BusFault_Handler() {
+	printf("BusFault Exception\n");
+	while(1);
 }
