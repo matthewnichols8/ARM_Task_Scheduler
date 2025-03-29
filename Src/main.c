@@ -37,7 +37,8 @@ void init_systick_timer(uint32_t tick_hz);
 __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack);
 void init_tasks_stack();
 void enable_processor_faults();
-void switch_sp_to_psp();
+uint32_t get_psp_value();
+__attribute__((naked)) void switch_sp_to_psp();
 
 /*
  * Global Variables
@@ -45,6 +46,8 @@ void switch_sp_to_psp();
 uint32_t psp_of_tasks[MAX_TASKS] = {T1_STACK_START, T2_STACK_START, T3_STACK_START, T4_STACK_START};
 
 uint32_t task_handlers[MAX_TASKS];
+
+uint8_t current_task = 0; //Task1 running
 
 int main(void)
 {
@@ -156,8 +159,22 @@ void enable_processor_faults() {
 	*pSHCSR |= (1 << 18); //Usage Fault
 }
 
-void switch_sp_to_psp() {
+uint32_t get_psp_value() {
+	return psp_of_tasks[current_task];
+}
 
+__attribute__((naked)) void switch_sp_to_psp() {
+	//1) Initialize PSP with Task1 Stack start address
+
+	__asm volatile("PUSH {LR}"); //Pushes LR to the main to the stack
+	__asm volatile("BL get_psp_value"); //Gets value of current PSP in R0
+	__asm volatile("MSR PSP, R0"); //Initialize PSP
+	__asm volatile("POP {LR}"); //Pops LR from the stack
+
+	//2) Change SP to PSP with CONTROL Register
+	__asm volatile ("MOV R0, #0x02"); //If Second bit of CONTROL Register is 1, then SP is now PSP
+	__asm volatile ("MSR CONTROL, R0"); //Sets SP to PSP
+	__asm volatile ("BX LR"); //Connects back to the main function
 }
 
 void SysTick_Handler() {
