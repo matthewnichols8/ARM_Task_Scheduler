@@ -18,31 +18,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "main.h"
 
 /*
- * Stack Memory Calculations
- */
-
-#define SIZE_TASK_STACK      1024U
-#define SIZE_SCHED_STACK     1024U
-
-#define SRAM_START           0x20000000U
-#define SIZE_SRAM            ( (128) * (1024) )
-#define SRAM_END             ( (SRAM_START) + (SIZE_SRAM) )
-
-#define T1_STACK_START       SRAM_END
-#define T2_STACK_START		 ( (SRAM_END) - (SIZE_TASK_STACK) )
-#define T3_STACK_START		 ( (SRAM_END) - (2 * SIZE_TASK_STACK) )
-#define T4_STACK_START		 ( (SRAM_END) - (3 * SIZE_TASK_STACK) )
-#define SCHED_STACK_START    ( (SRAM_END) - (4 * SIZE_TASK_STACK) )
-
-#define TICK_HZ 			 1000U
-
-#define HSI_CLOCK 			 16000000U
-#define SYSTICK_TIM_CLK		 HSI_CLOCK
-
-/*
- * Tasks
+ * Tasks to schedule
  */
 
 void task1_handler(); //Task 1
@@ -50,11 +29,46 @@ void task2_handler(); //Task 2
 void task3_handler(); //Task 3
 void task4_handler(); //Task 4
 
+
+/*
+ * Function Declarations
+ */
 void init_systick_timer(uint32_t tick_hz);
+__attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack);
+void init_tasks_stack();
+void enable_processor_faults();
+uint32_t get_psp_value();
+__attribute__((naked)) void switch_sp_to_psp();
+void save_psp_value(uint32_t current_psp_val);
+void update_next_task();
+
+/*
+ * Global Variables
+ */
+uint32_t psp_of_tasks[MAX_TASKS] = {T1_STACK_START, T2_STACK_START, T3_STACK_START, T4_STACK_START};
+
+uint32_t task_handlers[MAX_TASKS];
+
+uint8_t current_task = 0; //Task1 running
 
 int main(void)
 {
-	init_systick_timer(TICK_HZ);
+	enable_processor_faults(); //Enables Mem Manage, Bus, and Usage Faults
+
+	init_scheduler_stack(SCHED_STACK_START);
+
+	task_handlers[0] = (uint32_t)task1_handler;
+	task_handlers[1] = (uint32_t)task2_handler;
+	task_handlers[2] = (uint32_t)task3_handler;
+	task_handlers[3] = (uint32_t)task4_handler;
+
+	init_tasks_stack();
+
+	init_systick_timer(TICK_HZ); //Generates SysTick Timer Exception
+
+	switch_sp_to_psp(); //Switches from MSP to PSP
+
+	task1_handler();
 
     /* Loop forever */
 	for(;;);
@@ -104,6 +118,118 @@ void init_systick_timer(uint32_t tick_hz) {
 	*pSCSR |= (1 << 0); //Enables the SysTick counter
 }
 
+/*
+ * Must be a naked function to access MSP which is a special register
+ */
+__attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack) {
+	__asm volatile("MSR MSP, %0": : "r" (sched_top_of_stack) : ); //Puts value of the top of the stack into MSP
+	__asm volatile("BX LR"); //Return from function call
+}
+
+void init_tasks_stack() {
+	uint32_t* pPSP;
+	for (int i = 0; i < MAX_TASKS; i++) {
+		pPSP = (uint32_t*) psp_of_tasks[i];
+
+		pPSP --; //XPSR
+		*pPSP = DUMMY_XPSR; //Should always be 0x01000000 to be in thumb set instructions
+
+		pPSP --; //PC
+		*pPSP = task_handlers[i];
+
+		pPSP --; //LR
+		*pPSP = 0xFFFFFFFD;
+
+		//Sets the other reigsters to 0
+		for (int j = 0; j < 13; j++) {
+			pPSP --;
+			*pPSP = 0;
+		}
+
+		psp_of_tasks[i] = (uint32_t)pPSP; //Stores value of pPSP in global array
+	}
+}
+
+/*
+ * Enables memory manage, bus, and usage faults
+ */
+void enable_processor_faults() {
+	uint32_t* pSHCSR = (uint32_t*) 0xE000ED24; //Address of System Handler Control and State Register
+
+	*pSHCSR |= (1 << 16); //Memory Manage
+	*pSHCSR |= (1 << 17); //Bus Fault
+	*pSHCSR |= (1 << 18); //Usage Fault
+}
+
+uint32_t get_psp_value() {
+	return psp_of_tasks[current_task];
+}
+
+void save_psp_value(uint32_t current_psp_val) {
+	psp_of_tasks[current_task] = current_psp_val;
+}
+
+void update_next_task() {
+	current_task++;
+	current_task = current_task % MAX_TASKS; //When it reaches Max Tasks it will start at beginning again
+}
+
+__attribute__((naked)) void switch_sp_to_psp() {
+	//1) Initialize PSP with Task1 Stack start address
+
+	__asm volatile("PUSH {LR}"); //Pushes LR to the main to the stack
+	__asm volatile("BL get_psp_value"); //Gets value of current PSP in R0
+	__asm volatile("MSR PSP, R0"); //Initialize PSP
+	__asm volatile("POP {LR}"); //Pops LR from the stack
+
+	//2) Change SP to PSP with CONTROL Register
+	__asm volatile ("MOV R0, #0x02"); //If Second bit of CONTROL Register is 1, then SP is now PSP
+	__asm volatile ("MSR CONTROL, R0"); //Sets SP to PSP
+	__asm volatile ("BX LR"); //Connects back to the main function
+}
+
 void SysTick_Handler() {
-	printf("In SysTick Handler\n");
+	/*
+	 * Save the context of the current task
+	 */
+
+	//1) Get current running task's PSP value
+	__asm volatile("MRS R0, PSP");
+
+	//2) Using that PSP value store Stack frame 2 from R4 to R11
+	__asm volatile("STMDB R0!, {R4-R11}");
+
+	//3) Save the current value of PSP
+	__asm volatile("BL save_psp_value");
+
+	/*
+	 * Retrieve context of next task
+	 */
+
+	//1) Find next task
+	__asm volatile("BL update_next_task");
+
+	//2) get its old PSP val
+	__asm volatile("BL get_psp_value");
+
+	//3) Using the old PSP val, retrieve R4 to R11
+	__asm volatile("LDMIA R0, {R4-R11}");
+
+	//4) update the PSP and exit handler
+	__asm volatile("MSR PSP, R0");
+}
+
+void HardFault_Handler() {
+	printf("HardFault Exception\n");
+	while(1);
+}
+
+void MemManage_Handler() {
+	printf("MemManage Exception\n");
+	while(1);
+}
+
+void BusFault_Handler() {
+	printf("BusFault Exception\n");
+	while(1);
 }
