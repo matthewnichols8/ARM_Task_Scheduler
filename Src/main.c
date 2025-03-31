@@ -233,18 +233,3 @@ void BusFault_Handler() {
 	printf("BusFault Exception\n");
 	while(1);
 }
-
-void HardFault_Handler() {
-	printf("HardFault Exception\n");
-	while(1);
-}
-
-void MemManage_Handler() {
-	printf("MemManage Exception\n");
-	while(1);
-}
-
-void BusFault_Handler() {
-	printf("BusFault Exception\n");
-	while(1);
-}
