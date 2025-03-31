@@ -188,7 +188,7 @@ __attribute__((naked)) void switch_sp_to_psp() {
 	__asm volatile ("BX LR"); //Connects back to the main function
 }
 
-void SysTick_Handler() {
+__attribute__((naked)) void SysTick_Handler() {
 	/*
 	 * Save the context of the current task
 	 */
@@ -198,6 +198,8 @@ void SysTick_Handler() {
 
 	//2) Using that PSP value store Stack frame 2 from R4 to R11
 	__asm volatile("STMDB R0!, {R4-R11}");
+
+	__asm volatile("PUSH {LR}"); //Save LR
 
 	//3) Save the current value of PSP
 	__asm volatile("BL save_psp_value");
@@ -217,6 +219,10 @@ void SysTick_Handler() {
 
 	//4) update the PSP and exit handler
 	__asm volatile("MSR PSP, R0");
+
+	__asm volatile("POP {LR}");
+
+	__asm volatile("BX LR");
 }
 
 void HardFault_Handler() {

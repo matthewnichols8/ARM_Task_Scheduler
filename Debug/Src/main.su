@@ -11,7 +11,7 @@
 ../Src/main.c:168:6:save_psp_value	16	static
 ../Src/main.c:172:6:update_next_task	4	static
 ../Src/main.c:177:29:switch_sp_to_psp	0	static,ignoring_inline_asm
-../Src/main.c:191:6:SysTick_Handler	4	static,ignoring_inline_asm
-../Src/main.c:222:6:HardFault_Handler	8	static
-../Src/main.c:227:6:MemManage_Handler	8	static
-../Src/main.c:232:6:BusFault_Handler	8	static
+../Src/main.c:191:29:SysTick_Handler	0	static,ignoring_inline_asm
+../Src/main.c:228:6:HardFault_Handler	8	static
+../Src/main.c:233:6:MemManage_Handler	8	static
+../Src/main.c:238:6:BusFault_Handler	8	static
