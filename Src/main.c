@@ -39,8 +39,11 @@ void init_tasks_stack();
 void enable_processor_faults();
 uint32_t get_psp_value();
 __attribute__((naked)) void switch_sp_to_psp();
+<<<<<<< HEAD
 void save_psp_value(uint32_t current_psp_val);
 void update_next_task();
+=======
+>>>>>>> refs/remotes/origin/master
 
 /*
  * Global Variables
@@ -165,6 +168,7 @@ uint32_t get_psp_value() {
 	return psp_of_tasks[current_task];
 }
 
+<<<<<<< HEAD
 void save_psp_value(uint32_t current_psp_val) {
 	psp_of_tasks[current_task] = current_psp_val;
 }
@@ -174,6 +178,8 @@ void update_next_task() {
 	current_task = current_task % MAX_TASKS; //When it reaches Max Tasks it will start at beginning again
 }
 
+=======
+>>>>>>> refs/remotes/origin/master
 __attribute__((naked)) void switch_sp_to_psp() {
 	//1) Initialize PSP with Task1 Stack start address
 
@@ -217,6 +223,21 @@ void SysTick_Handler() {
 
 	//4) update the PSP and exit handler
 	__asm volatile("MSR PSP, R0");
+}
+
+void HardFault_Handler() {
+	printf("HardFault Exception\n");
+	while(1);
+}
+
+void MemManage_Handler() {
+	printf("MemManage Exception\n");
+	while(1);
+}
+
+void BusFault_Handler() {
+	printf("BusFault Exception\n");
+	while(1);
 }
 
 void HardFault_Handler() {
