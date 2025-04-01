@@ -65,6 +65,8 @@ int main(void)
 
 	init_tasks_stack();
 
+	led_init_all(); //Intitalizes all LEDS
+
 	init_systick_timer(TICK_HZ); //Generates SysTick Timer Exception
 
 	switch_sp_to_psp(); //Switches from MSP to PSP
@@ -78,25 +80,37 @@ int main(void)
 
 void task1_handler() {
 	while(1) {
-		printf("This is task 1\n");
+		led_on(LED_GREEN); //Green LED
+		delay(DELAY_COUNT_1S);
+		led_off(LED_GREEN);
+		delay(DELAY_COUNT_1S);
 	}
 }
 
 void task2_handler() {
 	while(1) {
-		printf("This is task 2\n");
+		led_on(LED_ORANGE); //Orange LED
+		delay(DELAY_COUNT_500MS);
+		led_off(LED_ORANGE);
+		delay(DELAY_COUNT_500MS);
 	}
 }
 
 void task3_handler() {
 	while(1) {
-		printf("This is task 3\n");
+		led_on(LED_BLUE); //Blue LED
+		delay(DELAY_COUNT_250MS);
+		led_off(LED_BLUE);
+		delay(DELAY_COUNT_250MS);
 	}
 }
 
 void task4_handler() {
 	while(1) {
-		printf("This is task 4\n");
+		led_on(LED_RED); //Red LED
+		delay(DELAY_COUNT_125MS);
+		led_off(LED_RED);
+		delay(DELAY_COUNT_125MS);
 	}
 }
 
