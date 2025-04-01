@@ -251,11 +251,17 @@ void schedule() {
 }
 
 void task_delay(uint32_t tickCount) {
+	//Disable the interrupt
+	INTERRUPT_DISABLE();
+
 	if (current_task) {
 		user_tasks[current_task].blockCount = g_tick_count + tickCount;
 		user_tasks[current_task].currentState = TASK_BLOCKED_STATE;
 		schedule();
 	}
+
+	//Enable the interrupt
+	INTERRUPT_ENABLE();
 }
 
 __attribute__((naked)) void PendSV_Handler() {
