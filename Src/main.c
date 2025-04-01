@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "main.h"
+#include "led.h"
 
 /*
  * Tasks to schedule
