@@ -42,8 +42,9 @@ uint32_t get_psp_value();
 __attribute__((naked)) void switch_sp_to_psp();
 void save_psp_value(uint32_t current_psp_val);
 void update_next_task();
-
 void task_delay(uint32_t tickCount);
+void update_global_tick_count();
+void unblock_tasks();
 
 /*
  * Global Variables
@@ -151,11 +152,11 @@ __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack) {
 
 void init_tasks_stack() {
 
-	user_tasks[0].currentState = TASK_RUNNING_STATE;
-	user_tasks[1].currentState = TASK_RUNNING_STATE;
-	user_tasks[2].currentState = TASK_RUNNING_STATE;
-	user_tasks[3].currentState = TASK_RUNNING_STATE;
-	user_tasks[4].currentState = TASK_RUNNING_STATE;
+	user_tasks[0].currentState = TASK_READY_STATE;
+	user_tasks[1].currentState = TASK_READY_STATE;
+	user_tasks[2].currentState = TASK_READY_STATE;
+	user_tasks[3].currentState = TASK_READY_STATE;
+	user_tasks[4].currentState = TASK_READY_STATE;
 
 	user_tasks[0].pspVal = IDLE_STACK_START;
 	user_tasks[1].pspVal = T1_STACK_START;
@@ -212,8 +213,21 @@ void save_psp_value(uint32_t current_psp_val) {
 }
 
 void update_next_task() {
-	current_task++;
-	current_task = current_task % MAX_TASKS; //When it reaches Max Tasks it will start at beginning again
+
+	int state = TASK_BLOCKED_STATE;
+
+	for (int i = 0; i < (MAX_TASKS); i++) {
+		current_task++;
+		current_task = current_task % MAX_TASKS; //When it reaches Max Tasks it will start at beginning again
+		state = user_tasks[current_task].currentState;
+		if ( (state == TASK_READY_STATE) && (current_task != 0) ) {
+			break;
+		}
+	}
+	if (state != TASK_READY_STATE) {
+		current_task = 0;
+	}
+
 }
 
 __attribute__((naked)) void switch_sp_to_psp() {
@@ -230,46 +244,82 @@ __attribute__((naked)) void switch_sp_to_psp() {
 	__asm volatile ("BX LR"); //Connects back to the main function
 }
 
-void task_delay(uint32_t tickCount) {
-	user_tasks[current_task].blockCount = g_tick_count + tickCount;
-	user_tasks[current_task].currentState = TASK_BLOCKED_STATE;
+void schedule() {
+	uint32_t* pICSR = (uint32_t*)  0xE000ED04; //ICSR address
+	//pend the SV Exception
+	*pICSR |= (1 << 28);
 }
 
-__attribute__((naked)) void SysTick_Handler() {
+void task_delay(uint32_t tickCount) {
+	if (current_task) {
+		user_tasks[current_task].blockCount = g_tick_count + tickCount;
+		user_tasks[current_task].currentState = TASK_BLOCKED_STATE;
+		schedule();
+	}
+}
+
+__attribute__((naked)) void PendSV_Handler() {
 	/*
-	 * Save the context of the current task
-	 */
+		 * Save the context of the current task
+		 */
 
-	//1) Get current running task's PSP value
-	__asm volatile("MRS R0, PSP");
+		//1) Get current running task's PSP value
+		__asm volatile("MRS R0, PSP");
 
-	//2) Using that PSP value store Stack frame 2 from R4 to R11
-	__asm volatile("STMDB R0!, {R4-R11}");
+		//2) Using that PSP value store Stack frame 2 from R4 to R11
+		__asm volatile("STMDB R0!, {R4-R11}");
 
-	__asm volatile("PUSH {LR}"); //Save LR
+		__asm volatile("PUSH {LR}"); //Save LR
 
-	//3) Save the current value of PSP
-	__asm volatile("BL save_psp_value");
+		//3) Save the current value of PSP
+		__asm volatile("BL save_psp_value");
 
-	/*
-	 * Retrieve context of next task
-	 */
+		/*
+		 * Retrieve context of next task
+		 */
 
-	//1) Find next task
-	__asm volatile("BL update_next_task");
+		//1) Find next task
+		__asm volatile("BL update_next_task");
 
-	//2) get its old PSP val
-	__asm volatile("BL get_psp_value");
+		//2) get its old PSP val
+		__asm volatile("BL get_psp_value");
 
-	//3) Using the old PSP val, retrieve R4 to R11
-	__asm volatile("LDMIA R0, {R4-R11}");
+		//3) Using the old PSP val, retrieve R4 to R11
+		__asm volatile("LDMIA R0, {R4-R11}");
 
-	//4) update the PSP and exit handler
-	__asm volatile("MSR PSP, R0");
+		//4) update the PSP and exit handler
+		__asm volatile("MSR PSP, R0");
 
-	__asm volatile("POP {LR}");
+		__asm volatile("POP {LR}");
 
-	__asm volatile("BX LR");
+		__asm volatile("BX LR");
+
+}
+
+void unblock_tasks() {
+	for (int i = 0; i < MAX_TASKS; i++) {
+		if (user_tasks[i].currentState != TASK_READY_STATE) {
+			if (user_tasks[i].blockCount == g_tick_count) {
+				user_tasks[i].currentState = TASK_READY_STATE;
+			}
+		}
+	}
+}
+
+void update_global_tick_count() {
+	g_tick_count++;
+}
+
+void SysTick_Handler() {
+
+	uint32_t* pICSR = (uint32_t*)  0xE000ED04; //ICSR address
+
+	update_global_tick_count();
+	unblock_tasks();
+
+	//pend the SV Exception
+	*pICSR |= (1 << 28);
+
 }
 
 void HardFault_Handler() {

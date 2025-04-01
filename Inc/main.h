@@ -38,7 +38,7 @@
 
 #define DUMMY_XPSR 			 0x01000000U
 
-#define TASK_RUNNING_STATE  0x00
+#define TASK_READY_STATE  0x00
 #define TASK_BLOCKED_STATE  0xFF
 
 #endif /* MAIN_H_ */
