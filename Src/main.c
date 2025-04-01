@@ -43,10 +43,13 @@ __attribute__((naked)) void switch_sp_to_psp();
 void save_psp_value(uint32_t current_psp_val);
 void update_next_task();
 
+void task_delay(uint32_t tickCount);
+
 /*
  * Global Variables
  */
-uint8_t current_task = 0; //Task1 running
+uint8_t current_task = 1; //Task1 running
+uint32_t g_tick_count = 0;
 
 typedef struct {
 	uint32_t pspVal;
@@ -77,6 +80,9 @@ int main(void)
 	for(;;);
 }
 
+void idle_task() {
+	while(1);
+}
 
 void task1_handler() {
 	while(1) {
@@ -149,16 +155,19 @@ void init_tasks_stack() {
 	user_tasks[1].currentState = TASK_RUNNING_STATE;
 	user_tasks[2].currentState = TASK_RUNNING_STATE;
 	user_tasks[3].currentState = TASK_RUNNING_STATE;
+	user_tasks[4].currentState = TASK_RUNNING_STATE;
 
-	user_tasks[0].pspVal = T1_STACK_START;
-	user_tasks[1].pspVal = T2_STACK_START;
-	user_tasks[2].pspVal = T3_STACK_START;
-	user_tasks[3].pspVal = T4_STACK_START;
+	user_tasks[0].pspVal = IDLE_STACK_START;
+	user_tasks[1].pspVal = T1_STACK_START;
+	user_tasks[2].pspVal = T2_STACK_START;
+	user_tasks[3].pspVal = T3_STACK_START;
+	user_tasks[4].pspVal = T4_STACK_START;
 
-	user_tasks[0].task_handler = task1_handler;
-	user_tasks[1].task_handler = task2_handler;
-	user_tasks[2].task_handler = task3_handler;
-	user_tasks[3].task_handler = task4_handler;
+	user_tasks[0].task_handler = task4_handler;
+	user_tasks[1].task_handler = task1_handler;
+	user_tasks[2].task_handler = task2_handler;
+	user_tasks[3].task_handler = task3_handler;
+	user_tasks[4].task_handler = task4_handler;
 
 	uint32_t* pPSP;
 	for (int i = 0; i < MAX_TASKS; i++) {
@@ -219,6 +228,11 @@ __attribute__((naked)) void switch_sp_to_psp() {
 	__asm volatile ("MOV R0, #0x02"); //If Second bit of CONTROL Register is 1, then SP is now PSP
 	__asm volatile ("MSR CONTROL, R0"); //Sets SP to PSP
 	__asm volatile ("BX LR"); //Connects back to the main function
+}
+
+void task_delay(uint32_t tickCount) {
+	user_tasks[current_task].blockCount = g_tick_count + tickCount;
+	user_tasks[current_task].currentState = TASK_BLOCKED_STATE;
 }
 
 __attribute__((naked)) void SysTick_Handler() {

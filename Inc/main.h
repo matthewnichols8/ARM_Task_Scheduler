@@ -8,7 +8,7 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#define MAX_TASKS 			 4
+#define MAX_TASKS 			 5
 
 /*
  * Stack Memory Calculations
@@ -25,7 +25,8 @@
 #define T2_STACK_START		 ( (SRAM_END) - (SIZE_TASK_STACK) )
 #define T3_STACK_START		 ( (SRAM_END) - (2 * SIZE_TASK_STACK) )
 #define T4_STACK_START		 ( (SRAM_END) - (3 * SIZE_TASK_STACK) )
-#define SCHED_STACK_START    ( (SRAM_END) - (4 * SIZE_TASK_STACK) )
+#define IDLE_STACK_START     ( (SRAM_END) - (4 * SIZE_TASK_STACK) )
+#define SCHED_STACK_START    ( (SRAM_END) - (5 * SIZE_TASK_STACK) )
 
 /*
  * Clock Macros
