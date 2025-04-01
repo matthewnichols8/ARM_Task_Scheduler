@@ -46,22 +46,22 @@ void update_next_task();
 /*
  * Global Variables
  */
-uint32_t psp_of_tasks[MAX_TASKS] = {T1_STACK_START, T2_STACK_START, T3_STACK_START, T4_STACK_START};
-
-uint32_t task_handlers[MAX_TASKS];
-
 uint8_t current_task = 0; //Task1 running
+
+typedef struct {
+	uint32_t pspVal;
+	uint32_t blockCount;
+	uint8_t  currentState;
+	void     (*task_handler) (void);
+}TCB_t;
+
+TCB_t user_tasks[MAX_TASKS];
 
 int main(void)
 {
 	enable_processor_faults(); //Enables Mem Manage, Bus, and Usage Faults
 
 	init_scheduler_stack(SCHED_STACK_START);
-
-	task_handlers[0] = (uint32_t)task1_handler;
-	task_handlers[1] = (uint32_t)task2_handler;
-	task_handlers[2] = (uint32_t)task3_handler;
-	task_handlers[3] = (uint32_t)task4_handler;
 
 	init_tasks_stack();
 
@@ -141,16 +141,34 @@ __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_of_stack) {
 	__asm volatile("BX LR"); //Return from function call
 }
 
+
+
 void init_tasks_stack() {
+
+	user_tasks[0].currentState = TASK_RUNNING_STATE;
+	user_tasks[1].currentState = TASK_RUNNING_STATE;
+	user_tasks[2].currentState = TASK_RUNNING_STATE;
+	user_tasks[3].currentState = TASK_RUNNING_STATE;
+
+	user_tasks[0].pspVal = T1_STACK_START;
+	user_tasks[1].pspVal = T2_STACK_START;
+	user_tasks[2].pspVal = T3_STACK_START;
+	user_tasks[3].pspVal = T4_STACK_START;
+
+	user_tasks[0].task_handler = task1_handler;
+	user_tasks[1].task_handler = task2_handler;
+	user_tasks[2].task_handler = task3_handler;
+	user_tasks[3].task_handler = task4_handler;
+
 	uint32_t* pPSP;
 	for (int i = 0; i < MAX_TASKS; i++) {
-		pPSP = (uint32_t*) psp_of_tasks[i];
+		pPSP = (uint32_t*) user_tasks[i].pspVal;
 
 		pPSP --; //XPSR
 		*pPSP = DUMMY_XPSR; //Should always be 0x01000000 to be in thumb set instructions
 
 		pPSP --; //PC
-		*pPSP = task_handlers[i];
+		*pPSP = (uint32_t) user_tasks[i].task_handler;
 
 		pPSP --; //LR
 		*pPSP = 0xFFFFFFFD;
@@ -161,7 +179,7 @@ void init_tasks_stack() {
 			*pPSP = 0;
 		}
 
-		psp_of_tasks[i] = (uint32_t)pPSP; //Stores value of pPSP in global array
+		user_tasks[i].pspVal = (uint32_t)pPSP; //Stores value of pPSP in global array
 	}
 }
 
@@ -177,11 +195,11 @@ void enable_processor_faults() {
 }
 
 uint32_t get_psp_value() {
-	return psp_of_tasks[current_task];
+	return user_tasks[current_task].pspVal;
 }
 
 void save_psp_value(uint32_t current_psp_val) {
-	psp_of_tasks[current_task] = current_psp_val;
+	user_tasks[current_task].pspVal = current_psp_val;
 }
 
 void update_next_task() {
