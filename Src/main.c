@@ -88,36 +88,36 @@ void idle_task() {
 void task1_handler() {
 	while(1) {
 		led_on(LED_GREEN); //Green LED
-		delay(DELAY_COUNT_1S);
+		task_delay(1000);
 		led_off(LED_GREEN);
-		delay(DELAY_COUNT_1S);
+		task_delay(1000);
 	}
 }
 
 void task2_handler() {
 	while(1) {
 		led_on(LED_ORANGE); //Orange LED
-		delay(DELAY_COUNT_500MS);
+		task_delay(500);
 		led_off(LED_ORANGE);
-		delay(DELAY_COUNT_500MS);
+		task_delay(500);
 	}
 }
 
 void task3_handler() {
 	while(1) {
 		led_on(LED_BLUE); //Blue LED
-		delay(DELAY_COUNT_250MS);
+		task_delay(250);
 		led_off(LED_BLUE);
-		delay(DELAY_COUNT_250MS);
+		task_delay(250);
 	}
 }
 
 void task4_handler() {
 	while(1) {
 		led_on(LED_RED); //Red LED
-		delay(DELAY_COUNT_125MS);
+		task_delay(125);
 		led_off(LED_RED);
-		delay(DELAY_COUNT_125MS);
+		task_delay(125);
 	}
 }
 
