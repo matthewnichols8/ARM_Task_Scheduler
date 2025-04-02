@@ -14,7 +14,7 @@ This project implements a **task scheduler** for ARM microcontrollers using the 
 ## Files
 - **main.c**: Main program body, which contains task initialization, SysTick timer configuration, and task management functions.
 - **main.h**: Header file defining macros, stack memory configuration, and clock settings.
-- **led.h**: Header file for LED control functions (assumed to manage LEDs for visual feedback of task operations).
+- **led.h**: Header file for LED control functions.
 - **led.c**: Contains the LED control functions.
 
 ## Task Control Block (TCB)
