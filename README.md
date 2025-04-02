@@ -1,6 +1,6 @@
 # ARM Task Scheduler using SysTick Timer
 
-This project implements a **task scheduler** for ARM microcontrollers using the **SysTick timer** and **SysTick_Handler**. It handles task switching, processor stack pointer (PSP) management, and context saving/restoration using ARM-inline-GCC assembly. The scheduler is designed for embedded systems, particularly for STM32-based microcontrollers.
+This project implements a **task scheduler** for ARM-based microcontrollers using the **SysTick timer** and **SysTick_Handler**. It handles task switching, processor stack pointer (PSP) management, and context saving/restoration using ARM-inline-GCC assembly. The scheduler is designed for embedded systems, particularly for STM32-based microcontrollers.
 
 ## Features
 - **Task Switching**: Utilizes the SysTick timer to trigger periodic interrupts, and the PendSV handler to switch between tasks.
